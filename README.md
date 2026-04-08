@@ -1,6 +1,9 @@
 - 👋 Hi, I’m @DydahMohd
 - 👀 I’m interested in web development
-- 🌱 I’m currently learning computer science
+- 👀 I’m interested in System development
+- 👀 I’m interested in Application development
+- 👀 I’m interested in IA development
+- 🌱 I’m a computer science graduate
 - 💞️ I’m looking to collaborate on everything about web development
 - 📫 How to reach me on my email, didahmuhamed@gmail.com
 
