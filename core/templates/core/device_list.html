@@ -1,0 +1,60 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Device List</h2>
+        <a href="{% url 'device_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add New Device
+        </a>
+    </div>
+
+    {% if devices %}
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Serial Number</th>
+                        <th>Name</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Condition</th>
+                        <th>Last Inspected</th>
+                        <th>Next Inspection</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for device in devices %}
+                        <tr>
+                            <td>{{ device.serial_number }}</td>
+                            <td>{{ device.name|default:"-" }}</td>
+                            <td>
+                                {% if device.wing %}{{ device.wing }}{% endif %}
+                                {% if device.floor %}{% if device.wing %}, {% endif %}{{ device.floor }}{% endif %}
+                                {% if device.room_number %}{% if device.wing or device.floor %}, {% endif %}{{ device.room_number }}{% endif %}
+                                {% if not device.wing and not device.floor and not device.room_number %}-{% endif %}
+                            </td>
+                            <td>{{ device.get_status_display }}</td>
+                            <td>{{ device.get_condition_display }}</td>
+                            <td>{{ device.last_inspected|default:"N/A" }}</td>
+                            <td>{{ device.next_inspection|default:"N/A" }}</td>
+                            <td>
+                                <div class="btn-group" role="group" aria-label="Device Actions">
+                                    <a href="{% url 'device_detail' device.pk %}" class="btn btn-sm btn-info" title="View Details"><i class="fas fa-eye"></i> View</a>
+                                    <a href="{% url 'device_edit' device.pk %}" class="btn btn-sm btn-primary" title="Edit Device"><i class="fas fa-edit"></i> Edit</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>No devices found. Click "Add New Device" to get started!</p>
+    {% endif %}
+{% endblock %}

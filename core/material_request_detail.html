@@ -1,0 +1,105 @@
+{% extends "core/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Material Request #{{ request.pk }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Material Request #{{ request.pk }}</h2>
+        <a href="{% url 'material_request_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Requests
+        </a>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Request Details</h4>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6"><strong>Material:</strong> {{ request.material.name }}</div>
+                <div class="col-md-6"><strong>Quantity:</strong> {{ request.quantity }} {{ request.material.unit }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6"><strong>Requester:</strong> {{ request.requester.get_full_name|default:request.requester.username }}</div>
+                <div class="col-md-6"><strong>Requested On:</strong> {{ request.created_at|date:"Y-m-d H:i" }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6"><strong>Status:</strong>
+                    <span class="badge bg-{% if request.status == 'pending' %}warning{% elif request.status == 'approved' %}success{% elif request.status == 'rejected' %}danger{% elif request.status == 'issued' %}primary{% else %}secondary{% endif %}">
+                        {{ request.get_status_display }}
+                    </span>
+                </div>
+                <div class="col-md-6"><strong>Approver:</strong> {{ request.approver.get_full_name|default:request.approver.username|default:"N/A" }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-12"><strong>Reason:</strong> {{ request.reason|linebreaksbr }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-12"><strong>Current Stock:</strong> {{ request.material.stock_quantity }} {{ request.material.unit }}</div>
+            </div>
+
+            {% if request.material.is_below_min_stock %}
+                <div class="alert alert-warning mt-3" role="alert">
+                    <strong>Low Stock Alert:</strong> {{ request.material.name }} is below its minimum stock level ({{ request.material.min_stock_level }} {{ request.material.unit }}).
+                </div>
+            {% endif %}
+
+            {% if user.is_property_manager or user.is_admin %}
+                <hr>
+                <h5>Actions</h5>
+                <div class="d-flex gap-2">
+                    {% if request.status == 'pending' %}
+                        <form action="{% url 'material_request_approve' request.pk %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success">Approve</button>
+                        </form>
+                        <form action="{% url 'material_request_reject' request.pk %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Reject</button>
+                        </form>
+                    {% elif request.status == 'approved' %}
+                        <form action="{% url 'material_request_issue' request.pk %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary"
+                                {% if request.material.stock_quantity < request.quantity %}disabled title="Insufficient stock"{% endif %}>
+                                Issue Material
+                            </button>
+                        </form>
+                        <form action="{% url 'material_request_reject' request.pk %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">Reject</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if messages %}
+        <div class="mt-4">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="card shadow-sm mt-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Audit Log for this Request</h5>
+        </div>
+        <ul class="list-group list-group-flush">
+            {% for log in request.audit_logs.all %}
+                <li class="list-group-item">
+                    <strong>{{ log.action_time|date:"Y-m-d H:i" }}</strong> - {{ log.description }} (by {{ log.user.username|default:"System" }})
+                </li>
+            {% empty %}
+                <li class="list-group-item">No audit log entries for this request.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

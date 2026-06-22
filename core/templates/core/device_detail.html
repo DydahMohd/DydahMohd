@@ -1,0 +1,129 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Device Details: {{ device.get_device_type_display }} (S/N: {{ device.serial_number }})</h4>
+                <div class="btn-group">
+                    <a href="{% url 'device_edit' device.pk %}" class="btn btn-sm btn-light" title="Edit Device">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <a href="{% url 'device_list' %}" class="btn btn-sm btn-light" title="Back to Device List">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs mb-4" id="deviceTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab" aria-controls="info" aria-selected="true">General Information</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab" aria-controls="history" aria-selected="false">Maintenance History ({{ related_tickets.count }})</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="deviceTabContent">
+                    <div class="tab-pane fade show active" id="info" role="tabpanel" aria-labelledby="info-tab">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <strong>Device Type:</strong> 
+                                <span class="text-primary font-weight-bold">
+                                    {{ device.get_device_type_display }}{% if device.device_type == 'other' and device.other_device_type %} ({{ device.other_device_type }}){% endif %}
+                                </span>
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Serial Number:</strong> {{ device.serial_number }}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Name:</strong> {{ device.name|default:"-" }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <strong>Wing:</strong> {{ device.wing|default:"-" }}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Floor:</strong> {{ device.floor|default:"-" }}
+                            </div>
+                            <div class="col-md-4">
+                                <strong>Room Number:</strong> {{ device.room_number|default:"-" }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Status:</strong> <span class="badge bg-{% if device.status == 'operational' %}success{% elif device.status == 'maintenance_due' %}warning{% else %}danger{% endif %}">{{ device.get_status_display }}</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Condition:</strong> <span class="badge bg-{% if device.condition == 'good' %}success{% elif device.condition == 'fair' %}info{% else %}danger{% endif %}">{{ device.get_condition_display }}</span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Last Inspected:</strong> {{ device.last_inspected|default:"N/A" }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Next Inspection:</strong> {{ device.next_inspection|default:"N/A" }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>Notes:</strong>
+                            <p class="card-text">{{ device.notes|default:"No notes available." }}</p>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="history" role="tabpanel" aria-labelledby="history-tab">
+                        {% if related_tickets %}
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Ticket #</th>
+                                            <th>Title</th>
+                                            <th>Status</th>
+                                            <th>Priority</th>
+                                            <th>Reported By</th>
+                                            <th>Assigned To</th>
+                                            <th>Created At</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for ticket in related_tickets %}
+                                            <tr>
+                                                <td>{{ ticket.id }}</td>
+                                                <td>{{ ticket.title }}</td>
+                                                <td>{{ ticket.get_status_display }}</td>
+                                                <td>{{ ticket.get_priority_display }}</td>
+                                                <td>{{ ticket.reported_by.username }}</td>
+                                                <td>{{ ticket.assigned_to.username|default:"Unassigned" }}</td>
+                                                <td>{{ ticket.created_at|date:"Y-m-d H:i" }}</td>
+                                                <td>
+                                                    <a href="{% url 'ticket_detail' ticket.pk %}" class="btn btn-sm btn-info">View</a>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-center py-4">No tickets associated with this device.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

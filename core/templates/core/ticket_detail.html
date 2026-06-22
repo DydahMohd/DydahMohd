@@ -1,0 +1,219 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h1 class="h4">{{ ticket.title }}</h1>
+                        <p class="text-muted mb-0">Reported by {{ ticket.reported_by.get_full_name|default:ticket.reported_by.username }} on {{ ticket.created_at|date:'M d, Y H:i' }}</p>
+                    </div>
+                    <div class="btn-toolbar gap-2">
+                        {% if request.user.is_admin or request.user.is_technician or ticket.status != 'resolved' and ticket.status != 'closed' %}
+                            <a class="btn btn-outline-primary" href="{% url 'ticket_update' ticket.pk %}">Edit Ticket</a>
+                        {% endif %}
+                        {% if request.user.is_admin or request.user.is_technician %}
+                            {% if ticket.status != 'closed' %}
+                                <form method="post" action="{% url 'ticket_close' ticket.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-danger">Close ticket</button>
+                                </form>
+                            {% endif %}
+                            {% if ticket.status == 'resolved' or ticket.status == 'closed' %}
+                                <form method="post" action="{% url 'ticket_reopen' ticket.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <div class="mb-2">
+                                        {{ reopen_form.reason.label_tag }}
+                                        {{ reopen_form.reason }}
+                                        {% if reopen_form.reason.errors %}
+                                            <div class="invalid-feedback d-block">{{ reopen_form.reason.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <button type="submit" class="btn btn-sm btn-warning">Reopen ticket</button>
+                                </form>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% if ticket.status == 'resolved' or ticket.status == 'closed' %}
+                    {% if not request.user.is_admin and not request.user.is_technician %}
+                        <div class="alert alert-warning">Resolved or closed tickets cannot be modified by staff.</div>
+                    {% endif %}
+                {% endif %}
+                <dl class="row mb-4">
+                    <dt class="col-sm-3">Status</dt>
+                    <dd class="col-sm-9">
+                        {% if ticket.status == 'open' %}
+                            <span class="badge bg-secondary">Open</span>
+                        {% elif ticket.status == 'in_progress' %}
+                            <span class="badge bg-info text-dark">In progress</span>
+                        {% elif ticket.status == 'resolved' %}
+                            <span class="badge bg-success">Resolved</span>
+                        {% elif ticket.status == 'closed' %}
+                            <span class="badge bg-dark">Closed</span>
+                        {% else %}
+                            {{ ticket.get_status_display }}
+                        {% endif %}
+                        {% if ticket.is_stale %}
+                            <span class="badge bg-danger ms-1">Stale</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-3">Priority</dt>
+                    <dd class="col-sm-9">{{ ticket.get_priority_display }}</dd>
+
+                    <dt class="col-sm-3">Assigned to</dt>
+                    <dd class="col-sm-9">{% if ticket.assigned_to %}{{ ticket.assigned_to.get_full_name|default:ticket.assigned_to.username }}{% else %}Unassigned{% endif %}</dd>
+
+                    {% if request.user.is_technician and not ticket.assigned_to %}
+                        <dt class="col-sm-3">Take action</dt>
+                        <dd class="col-sm-9">
+                            <form method="post" action="{% url 'ticket_assign' ticket.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-primary">Assign to me</button>
+                            </form>
+                        </dd>
+                    {% elif ticket.assigned_to and ticket.assigned_to == request.user and ticket.status != 'resolved' and ticket.status != 'closed' %}
+                        <dt class="col-sm-3">Resolve ticket</dt>
+                        <dd class="col-sm-9">
+                            <form method="post" action="{% url 'ticket_resolve' ticket.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-success">Mark as resolved</button>
+                            </form>
+                        </dd>
+                    {% elif request.user.is_admin and ticket.status != 'resolved' and ticket.status != 'closed' %}
+                        <dt class="col-sm-3">Resolve ticket</dt>
+                        <dd class="col-sm-9">
+                            <form method="post" action="{% url 'ticket_resolve' ticket.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-success">Mark as resolved</button>
+                            </form>
+                        </dd>
+                    {% endif %}
+
+                    <dt class="col-sm-3">Category</dt>
+                    <dd class="col-sm-9">{{ ticket.category|default:'Not specified' }}</dd>
+
+                    <dt class="col-sm-3">Wing</dt>
+                    <dd class="col-sm-9">{{ ticket.wing|default:'Not specified' }}</dd>
+
+                    <dt class="col-sm-3">Floor</dt>
+                    <dd class="col-sm-9">{{ ticket.floor|default:'Not specified' }}</dd>
+
+                    <dt class="col-sm-3">Room number</dt>
+                    <dd class="col-sm-9">{{ ticket.room_number|default:'Not specified' }}</dd>
+
+                    <dt class="col-sm-3">Device serial number</dt>
+                    <dd class="col-sm-9">{{ ticket.device_serial_number|default:'Not provided' }}</dd>
+
+                    {% if ticket.resolved_at %}
+                        <dt class="col-sm-3">Resolved at</dt>
+                        <dd class="col-sm-9">{{ ticket.resolved_at|date:'M d, Y H:i' }}</dd>
+                    {% endif %}
+                    {% if ticket.closed_at %}
+                        <dt class="col-sm-3">Closed at</dt>
+                        <dd class="col-sm-9">{{ ticket.closed_at|date:'M d, Y H:i' }}</dd>
+                    {% endif %}
+                    {% if ticket.reopened_at %}
+                        <dt class="col-sm-3">Reopened at</dt>
+                        <dd class="col-sm-9">{{ ticket.reopened_at|date:'M d, Y H:i' }}</dd>
+                    {% endif %}
+                    {% if ticket.reopen_reason %}
+                        <dt class="col-sm-3">Reopen reason</dt>
+                        <dd class="col-sm-9">{{ ticket.reopen_reason|linebreaksbr }}</dd>
+                    {% endif %}
+                </dl>
+                <div class="mb-4">
+                    <h5>Description</h5>
+                    <p>{{ ticket.description|linebreaksbr }}</p>
+                </div>
+                <div class="mb-4">
+                    <h5>Comments</h5>
+                    <ul class="list-group mb-3">
+                        {% for comment in comments %}
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <strong>{% if comment.user %}{{ comment.user.get_full_name|default:comment.user.username }}{% else %}System{% endif %}</strong>
+                                    <small class="text-muted">{{ comment.created_at|date:'M d, Y H:i' }}</small>
+                                </div>
+                                <p class="mb-0">{{ comment.comment|linebreaksbr }}</p>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item">No comments yet.</li>
+                        {% endfor %}
+                    </ul>
+                    {% if ticket.status != 'resolved' and ticket.status != 'closed' or request.user.is_admin or request.user.is_technician %}
+                        <form method="post" action="{% url 'ticket_comment' ticket.pk %}">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                {{ comment_form.comment.label_tag }}
+                                {{ comment_form.comment }}
+                                {% if comment_form.comment.errors %}
+                                    <div class="invalid-feedback d-block">{{ comment_form.comment.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <button class="btn btn-primary">Add comment</button>
+                        </form>
+                    {% endif %}
+                </div>
+                <div class="mb-4">
+                    <h5>Attachments</h5>
+                    <ul class="list-group mb-3">
+                        {% for attachment in attachments %}
+                            <li class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <a href="{{ attachment.file.url }}" target="_blank">{{ attachment.file.name|slice:':40' }}</a>
+                                    <small class="text-muted">{{ attachment.uploaded_at|date:'M d, Y H:i' }}</small>
+                                </div>
+                                {% if attachment.description %}
+                                    <p class="mb-0">{{ attachment.description }}</p>
+                                {% endif %}
+                                <p class="mb-0"><small class="text-muted">Uploaded by {% if attachment.uploaded_by %}{{ attachment.uploaded_by.get_full_name|default:attachment.uploaded_by.username }}{% else %}System{% endif %}</small></p>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item">No attachments uploaded yet.</li>
+                        {% endfor %}
+                    </ul>
+                    {% if ticket.status != 'resolved' and ticket.status != 'closed' or request.user.is_admin or request.user.is_technician %}
+                        <form method="post" action="{% url 'ticket_attachment' ticket.pk %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                {{ attachment_form.file.label_tag }}
+                                {{ attachment_form.file }}
+                                {% if attachment_form.file.errors %}
+                                    <div class="invalid-feedback d-block">{{ attachment_form.file.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                {{ attachment_form.description.label_tag }}
+                                {{ attachment_form.description }}
+                                {% if attachment_form.description.errors %}
+                                    <div class="invalid-feedback d-block">{{ attachment_form.description.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <button class="btn btn-secondary">Upload attachment</button>
+                        </form>
+                    {% endif %}
+                </div>
+                <div class="mb-4">
+                    <h5>Audit log</h5>
+                    <ul class="list-group">
+                        {% for event in audit_logs %}
+                            <li class="list-group-item">
+                                <strong>{{ event.action_type|capfirst }}</strong> by {% if event.user %}{{ event.user.get_full_name|default:event.user.username }}{% else %}System{% endif %}
+                                <span class="text-muted">on {{ event.action_time|date:'M d, Y H:i' }}</span>
+                                <p class="mb-0">{{ event.description }}</p>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item">No audit entries available.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <a class="btn btn-secondary" href="{% url 'ticket_list' %}">Back to tickets</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

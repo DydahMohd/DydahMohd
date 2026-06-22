@@ -1,0 +1,108 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h4">Incident Tickets</h1>
+        <p class="text-muted mb-0">Browse all tickets available to your role.</p>
+    </div>
+    <a href="{% url 'ticket_create' %}" class="btn btn-primary">New Ticket</a>
+</div>
+
+<form method="get" class="row g-2 mb-4">
+    <div class="col-md-3">
+        <input type="text" name="search" value="{{ search_query }}" class="form-control" placeholder="Search tickets">
+    </div>
+    <div class="col-md-2">
+        <select name="status" class="form-select">
+            <option value="">Status</option>
+            {% for value,label in status_choices %}
+                <option value="{{ value }}" {% if value == status_filter %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="priority" class="form-select">
+            <option value="">Priority</option>
+            {% for value,label in priority_choices %}
+                <option value="{{ value }}" {% if value == priority_filter %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="wing" class="form-select">
+            <option value="">Wing</option>
+            {% for value,label in wing_choices %}
+                <option value="{{ value }}" {% if value == wing_filter %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="floor" class="form-select">
+            <option value="">Floor</option>
+            {% for value,label in floor_choices %}
+                <option value="{{ value }}" {% if value == floor_filter %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-1">
+        <select name="stale" class="form-select">
+            <option value="">Aging</option>
+            <option value="1" {% if stale_filter == '1' %}selected{% endif %}>Stale tickets</option>
+        </select>
+    </div>
+    <div class="col-md-1 text-end">
+        <button type="submit" class="btn btn-outline-secondary w-100">Filter</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Ticket</th>
+                <th>Serial</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Reported by</th>
+                <th>Assigned to</th>
+                <th>Updated</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticket in tickets %}
+                <tr>
+                    <td><a href="{% url 'ticket_detail' ticket.pk %}">{{ ticket.title }}</a></td>
+                    <td>{{ ticket.device_serial_number|default:'N/A' }}</td>
+                    <td>
+                        {% if ticket.status == 'open' %}
+                            <span class="badge bg-secondary">Open</span>
+                        {% elif ticket.status == 'in_progress' %}
+                            <span class="badge bg-info text-dark">In progress</span>
+                        {% elif ticket.status == 'resolved' %}
+                            <span class="badge bg-success">Resolved</span>
+                        {% elif ticket.status == 'closed' %}
+                            <span class="badge bg-dark">Closed</span>
+                        {% else %}
+                            {{ ticket.get_status_display }}
+                        {% endif %}
+                        {% if ticket.is_stale %}
+                            <span class="badge bg-danger ms-1">Stale</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ ticket.get_priority_display }}</td>
+                    <td>{{ ticket.reported_by.username }}</td>
+                    <td>{% if ticket.assigned_to %}{{ ticket.assigned_to.username }}{% else %}Unassigned{% endif %}</td>
+                    <td>{{ ticket.updated_at|date:'M d, Y H:i' }}</td>
+                    <td><a class="btn btn-sm btn-outline-secondary" href="{% url 'ticket_detail' ticket.pk %}">View</a></td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-5">No tickets found for your account.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

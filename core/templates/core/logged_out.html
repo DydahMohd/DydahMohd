@@ -1,0 +1,20 @@
+{% extends 'core/base.html' %}
+
+{% block head %}
+<meta http-equiv="refresh" content="3;url={% url 'login' %}">
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <h1 class="h4 mb-3">Logged out</h1>
+                <p class="text-muted mb-4">You have been successfully logged out of the EAC Helpdesk application.</p>
+                <p class="text-muted mb-4">Redirecting to login in 3 seconds...</p>
+                <a href="{% url 'login' %}" class="btn btn-primary">Return to login now</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

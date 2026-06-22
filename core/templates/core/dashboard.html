@@ -1,0 +1,155 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h1 class="h4">Dashboard</h1>
+                <p class="text-muted">Welcome back, {{ request.user.first_name|default:request.user.username }}.</p>
+                <div class="row gy-3">
+                    <div class="col-md-4">
+                        <div class="card border-primary h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Role</h5>
+                                <p class="card-text">{{ user_role }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-secondary h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Access</h5>
+                                <p class="card-text">{% if is_admin %}Administrator{% elif is_technician %}Technician{% else %}Staff{% endif %}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border-success h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Quick Actions</h5>
+                                <p class="card-text mb-3">Use the links below to move quickly.</p>
+                                <a class="btn btn-sm btn-primary me-1" href="{% url 'ticket_create' %}">Report Incident</a>
+                                <a class="btn btn-sm btn-outline-secondary" href="{% url 'ticket_list' %}">Ticket List</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% if is_admin %}
+                    <div class="alert alert-info mt-4">
+                        Admin dashboard: access user management, reports exports, and system audit logs from the navigation menu.
+                    </div>
+                {% elif is_technician %}
+                    <div class="alert alert-warning mt-4">
+                        Technician dashboard: review assigned tickets, update statuses, and track incident resolution.
+                    </div>
+                {% else %}
+                    <div class="alert alert-secondary mt-4">
+                        Staff dashboard: create incidents, monitor your reported tickets, and follow updates from technicians.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="row g-3">
+            {% if is_admin or is_technician %}
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-danger">
+                        <div class="card-body">
+                            <h5 class="card-title">Critical incidents</h5>
+                            <p class="card-text mb-2">There are {{ critical_open_tickets }} critical tickets pending attention and {{ high_priority_tickets }} high-priority items total.</p>
+                            <a class="btn btn-outline-danger" href="{% url 'ticket_list' %}?priority=critical">View critical tickets</a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% if is_admin or is_technician %}
+                <div class="col-md-6">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h5 class="card-title">Reports</h5>
+                            <p class="card-text">Generate ticket reports and export summaries for audit review.</p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a class="btn btn-outline-primary" href="{% url 'ticket_report' %}">View reports</a>
+                                <a class="btn btn-outline-success" href="{% url 'device_audit_report' %}">Device audit</a>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            {% endif %}
+            {% if is_admin or is_technician %}
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-warning">
+                        <div class="card-body">
+                            <h5 class="card-title">Overdue SLA tickets</h5>
+                            <p class="card-text mb-2">There are {{ overdue_sla_tickets }} tickets open or in progress past their priority deadline.</p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a class="btn btn-outline-warning" href="{% url 'ticket_list' %}?overdue=1">View overdue tickets</a>
+                                {% if is_admin and overdue_notifications_available %}
+                                    <form method="post" action="{% url 'overdue_notification_send' %}" class="m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-warning">Send overdue alerts now</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-danger">
+                        <div class="card-body">
+                            <h5 class="card-title">Aging tickets</h5>
+                            <p class="card-text mb-2">There are {{ stale_tickets }} tickets open or in progress for more than 3 days.</p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a class="btn btn-outline-danger" href="{% url 'ticket_list' %}?stale=1">View aging tickets</a>
+                                {% if is_admin and stale_notifications_available %}
+                                    <form method="post" action="{% url 'stale_notification_send' %}" class="m-0">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger">Send stale alerts now</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            {% if is_admin %}
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-info">
+                        <div class="card-body">
+                            <h5 class="card-title">Admin Tools</h5>
+                            <p class="card-text">Manage users, ticket assignments, and security audit records.</p>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a class="btn btn-info" href="{% url 'admin:index' %}">Go to Admin</a>
+                                <a class="btn btn-outline-info" href="{% url 'user_list' %}">Manage Users</a>
+                                <a class="btn btn-outline-info" href="{% url 'audit_log_list' %}">View Audits</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow-sm border-warning">
+                        <div class="card-body">
+                            <h5 class="card-title">Recent Audits</h5>
+                            <p class="card-text">{{ audit_count }} audit records total. Latest activity is shown below.</p>
+                            <div class="mb-3">
+                                <a class="btn btn-sm btn-warning me-2" href="{% url 'audit_report_pdf' %}">Export Audit PDF</a>
+                                <a class="btn btn-sm btn-outline-warning" href="{% url 'audit_report_excel' %}">Export Audit Excel</a>
+                            </div>
+                            <ul class="list-group list-group-flush">
+                                {% for event in recent_audits %}
+                                    <li class="list-group-item py-2">
+                                        <strong>{{ event.action_type|capfirst }}</strong> by {% if event.user %}{{ event.user.get_full_name|default:event.user.username }}{% else %}System{% endif %}
+                                        <br>
+                                        <small class="text-muted">{{ event.action_time|date:'M d, Y H:i' }} on {% if event.ticket %}{{ event.ticket.title }}{% else %}system{% endif %}</small>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

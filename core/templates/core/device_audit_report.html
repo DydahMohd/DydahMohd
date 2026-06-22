@@ -1,0 +1,121 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-12">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        <h1 class="h4">Device Audit Report</h1>
+        <p class="text-muted mb-0">Auditor view: see which devices are operating well, which need attention, and which are not working.</p>
+      </div>
+      <div class="btn-group">
+        <a class="btn btn-outline-primary" href="{% url 'device_audit_report_pdf' %}">Download PDF</a>
+        <a class="btn btn-outline-success" href="{% url 'device_audit_report_excel' %}">Download Excel</a>
+        <a class="btn btn-outline-info" href="{% url 'device_audit_report_csv' %}">Download CSV</a>
+        <a class="btn btn-outline-secondary" href="{% url 'dashboard' %}">Back to Dashboard</a>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+      <div class="col-md-3">
+        <div class="card border-success h-100">
+          <div class="card-body">
+            <h6 class="card-title">Working (Good)</h6>
+            <p class="card-text display-6 mb-0">{{ working_count }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-warning h-100">
+          <div class="card-body">
+            <h6 class="card-title">Needs Attention</h6>
+            <p class="card-text display-6 mb-0">{{ attention_count }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-danger h-100">
+          <div class="card-body">
+            <h6 class="card-title">Not Working</h6>
+            <p class="card-text display-6 mb-0">{{ not_working_count }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card border-info h-100">
+          <div class="card-body">
+            <h6 class="card-title">Total Devices</h6>
+            <p class="card-text display-6 mb-0">{{ total_devices }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="mb-3">
+          <h5 class="card-title mb-2">Summary by device status</h5>
+          <p class="text-muted mb-0">Inspection due is flagged when <strong>last inspected is older than 180 days</strong> and/or <strong>next inspection date is due</strong>.</p>
+        </div>
+
+        {% for section in sections %}
+          <div class="mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <h5 class="mb-0">{{ section.title }}</h5>
+              <span class="badge bg-secondary">{{ section.devices|length }}</span>
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-striped table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th>Serial Number</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Condition</th>
+                    <th>Last Inspected</th>
+                    <th>Next Inspection</th>
+                    <th>Inspection Due</th>
+                    <th>Recommendation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for device in section.devices %}
+                    <tr>
+                      <td><strong>{{ device.serial_number }}</strong></td>
+                      <td>{{ device.name|default:'-' }}</td>
+                      <td>{{ device.status_label }}</td>
+                      <td>{{ device.condition_label }}</td>
+                      <td>{{ device.last_inspected|date:'Y-m-d'|default:'-' }}</td>
+                      <td>{{ device.next_inspection|date:'Y-m-d'|default:'-' }}</td>
+                      <td>
+                        {% if device.inspection_due %}
+                          <span class="badge bg-danger">Due</span>
+                        {% else %}
+                          <span class="badge bg-success">OK</span>
+                        {% endif %}
+                      </td>
+                      <td style="max-width: 360px;">
+                        <div class="text-wrap">{{ device.recommendation }}</div>
+                        {% if device.notes %}
+                          <div class="text-muted small mt-1">{{ device.notes }}</div>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="8" class="text-center py-4">No devices found in this category.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {% endfor %}
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
