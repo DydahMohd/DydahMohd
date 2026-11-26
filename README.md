@@ -43,6 +43,6 @@ Python • Flask • Django • PHP • JavaScript • HTML • CSS • MySQL �
 
 ### About this profile
 
-This is the official GitHub profile of **Hadija Mohamedi Bedui**, a Computer Science graduate and ICT/software professional in Tanzania.
+This is the official GitHub profile of **Hadija Mohamedi Bedui**, a Computer Science and ICT/software professional in Tanzania.
 
 Keywords: Hadija Mohamedi Bedui, Hadija Mohamedi, DydahMohd, Computer Science Tanzania, ICT Support Tanzania, Software Developer Tanzania, Web Developer Tanzania.
